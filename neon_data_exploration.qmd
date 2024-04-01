@@ -7,28 +7,282 @@ editor_options:
   chunk_output_type: console
 ---
 
-## Data Exploration - SRER NEON
-
 This is an exploration of available data at the NEON SRER site. Data are intended to be used for MCA grant efforts to understand patterns of spatial heterogeneity in soil C.
+
+## Preparation Steps
+
+### Package Loading
 
 ```{r}
 #| label: load-packages
 library(here)
 library(neonUtilities)
 library(neonOS)
+library(tidyverse)
+library(ggplot2)
 options(stringsAsFactors=F)
+#library(devtools) # shouldn't need once geoNEON installed
+#install_github('NEONScience/NEON-geolocation/geoNEON', dependencies=TRUE)
+library(geoNEON)
+library(terra)
+library(tidyterra)
 ```
 
+### Data Downloading
+
 ```{r}
-#| label: download-to-R
-# this downloads SRER soil physical and chemical data from all dates
+#| label: periodic-core-data-download
+# this downloads SRER soil physical and chemical data (periodic sampling) from all dates
+# https://data.neonscience.org/data-products/DP1.10086.001 
 soil_periodic <- loadByProduct(dpID="DP1.10086.001", 
                   site="SRER", 
                   package="expanded", 
-                  check.size=T)
+                  check.size=F)
+# extract all files
+list2env(soil_periodic, .GlobalEnv)
 ```
 
 ```{r}
-# extract all 
-list2env(soil_periodic, .GlobalEnv)
+#| label: distributed-soils-data-download
+# this downloads SRER soil data from the distributed plots
+soil_distributed <- loadByProduct(dpID="DP1.10047.001", 
+                  site="SRER", 
+                  package="expanded", 
+                  check.size=F)
+list2env(soil_distributed, .GlobalEnv)
+```
+
+```{r}
+#| label: litterfall-date-download
+# this downloads SRER litterfall data
+### Not currently using this further in this script
+litterfall <- loadByProduct(dpID="DP1.10033.001", 
+                  site="SRER", 
+                  package="expanded", 
+                  check.size=F)
+list2env(litterfall, .GlobalEnv)
+```
+
+## Distributed Soil Core Data
+
+```{r}
+#|label: adjust-locations
+# use geoNEON package to get the exact locations of TOS sampling
+# values are with prefix "adj" (e.g,. "adjDecimalLatitude")
+sls_soilCoreCollection <- getLocTOS(sls_soilCoreCollection, 'sls_soilCoreCollection')
+```
+
+### Merge sls Soil C Files
+
+```{r}
+#| label: link-CN-with-soil-core-collection-location
+# joins by "sampleID" while also dropping duplicate columns (which get ".y" at the end upon merging)
+
+# This file includes only cores that have been run for CN.
+merged_soilChemistry <- sls_soilChemistry |>
+  left_join(sls_soilCoreCollection, join_by(sampleID), suffix=c(""  ,".y")) |>
+  select(-ends_with(".y"))
+
+# This join includes all cores that have been taken, many of which have not been run for CN.
+merged_soilChemistry_allcores <-  sls_soilCoreCollection |>
+  left_join(sls_soilChemistry, join_by(sampleID), suffix=c(""  ,".y")) |>
+  select(-ends_with(".y"))
+```
+
+### Map Analyzed Soil Core Locations
+
+```{r}
+# for all cores that have been analyzed
+# create map of plots (using merged_soilChemistry data set)
+
+merged_soilChemistry |>
+      ggplot(aes(adjEasting, adjNorthing)) +
+      geom_point(aes(color = acidTreatment)) +
+      ggtitle("All Analyzed SRER Cores") +
+      labs(
+        x = "Easting", 
+        y = "Northing", 
+        colour = "Acid Treatment",
+        title = "All Analyzed SRER Cores",
+       # subtitle = "Acid treated cores are C, not acid treated are N"
+        )
+# Export plot
+ggsave(here("figures", "Analyzed_SRER_Cores.jpg"), width = 10, height = 8, dpi = 300)
+
+# zoom in on a single plot - here arbitrarily selected as SRER_052, which is one of the tower plots
+merged_soilChemistry |>
+    filter(plotID == "SRER_052") |>
+    ggplot(aes(adjEasting, adjNorthing)) +
+      geom_point(aes(color = acidTreatment)) +
+      ggtitle("Plot_052 Analyzed Cores")
+# Export plot
+ggsave(here("figures", "analyzed_cores_plot052.jpg"), width = 10, height = 8, dpi = 300)
+```
+
+```{r}
+#| label: map-coring-locations
+# for all cores that have been collected
+# create map of coring locations
+
+sls_soilCoreCollection |>
+      ggplot(aes(adjEasting, adjNorthing)) +
+      geom_point() +
+      ggtitle("All Analyzed SRER Cores") +
+      labs(
+        x = "Easting", 
+        y = "Northing", 
+        title = "All Collected SRER Cores",
+        )
+# Export plot
+ggsave(here("figures", "all_collected_SRER_cores.jpg"), width = 10, height = 8, dpi = 300)
+
+
+# zoom in on a single plot - here arbitrarily selected as SRER_052, which is one of the tower plots
+sls_soilCoreCollection |>
+    filter(plotID == "SRER_052") |>
+    ggplot(aes(adjEasting, adjNorthing)) +
+      geom_point() +
+      labs(
+        x = "Easting", 
+        y = "Northing", 
+        title = "Locations of all SRER NEON Plot 052 Cores"
+        )
+# Export plot
+ggsave(here("figures", "all_collected_plot052_cores.jpg"), width = 10, height = 8, dpi = 300)
+```
+
+```{r}
+#| label: map-litter-depth
+
+merged_soilChemistry |>
+    filter(litterDepth >= 0) |>
+      ggplot(aes(adjEasting, adjNorthing)) +
+      geom_point(aes(colour = litterDepth)) +
+      labs(
+        x = "Easting", 
+        y = "Northing", 
+        title = "All Litter Depth Measurements",
+        )
+
+# zoom in on a single plot - here arbitrarily selected as SRER_052, which is one of the tower plots
+merged_soilChemistry |>
+    filter(litterDepth >= 0) |>
+        filter(plotID == "SRER_052") |>
+          ggplot(aes(adjEasting, adjNorthing)) +
+          geom_point(aes(colour = litterDepth)) +
+          ggtitle("All Analyzed SRER Cores") +
+          labs(
+          x = "Easting", 
+          y = "Northing", 
+          title = "Plot SRER_052 Litter Depth Measurements",
+          )
+# Export plot
+ggsave(here("figures", "plot052_litter_depth.jpg"), width = 10, height = 8, dpi = 300)
+```
+
+## SOC and 13C Data Exploration
+
+I'm looking at patterns in the soil C data from cores that have been analyzed to see if we can find differences that suggest woody canopy versus grass contrasts.
+
+### Overall SOC Patterns
+
+```{r}
+#| label: explore-SOC-patterns
+# plot organic C versus 13C for cores that have been analyzed
+merged_soilChemistry |>
+    ggplot(aes(organicCPercent, organicd13C)) +
+    geom_point(aes(color = plotID))
+ggsave(here("figures", "orgC_vs_d13C.jpg"), width = 10, height = 8, dpi = 300)
+
+# plot SOC versus elevation for cores that have been analyzed
+merged_soilChemistry |>
+    ggplot(aes(elevation, organicCPercent)) +
+    geom_point(aes(color = plotID))
+ggsave(here("figures", "elev_vs_orgC.jpg"), width = 10, height = 8, dpi = 300)
+
+# plot 13C versus elevation for cores that have been analyzed
+# add in sampleBottomDepth (core depth) to see the distribution
+merged_soilChemistry |>
+    ggplot(aes(elevation, organicd13C)) +
+    geom_point(aes(color = sampleBottomDepth)) 
+ggsave(here("figures", "elev_vs_d13C.jpg"), width = 10, height = 8, dpi = 300)
+# there seems to be a larger than I'd expect range in core depths. This warrants more digging.
+
+```
+
+### Core Depth for Analyzed Cores
+
+```{r}
+# plot organic C versus core depth (sampleBottomDepth) for cores that have been analyzed
+merged_soilChemistry |>
+    ggplot(aes(sampleBottomDepth, organicCPercent)) +
+    geom_point(aes(color = plotID))
+ggsave(here("figures", "depth_vs_orgC.jpg"), width = 10, height = 8, dpi = 300)
+# yikes -- this illustrates that few cores are the target 30 cm depth. Many are MUCH shallower.
+
+# plot 13C versus core depth (sampleBottomDepth) for cores that have been analyzed
+merged_soilChemistry |>
+    ggplot(aes(sampleBottomDepth, organicd13C)) +
+    geom_point(aes(color = plotID))
+ggsave(here("figures", "depth_vs_d13C.jpg"), width = 10, height = 8, dpi = 300)
+```
+
+```{r}
+#| label: separate-by-depth
+
+# What if we filter to 2 depths: 15-18 cm and 25-35 cm?
+
+# patterns for shallow depth (15-18 cm)
+merged_soilChemistry |>
+    filter(sampleBottomDepth > 15 & sampleBottomDepth <18) |>
+    ggplot(aes(organicCPercent, organicd13C)) +
+      geom_point(aes(color = plotID)) +
+      ggtitle("15-18 cm cores only")
+ggsave(here("figures", "orgC_vs_d13C_15-18cm.jpg"), width = 10, height = 8, dpi = 300)
+
+merged_soilChemistry |>
+    filter(sampleBottomDepth > 15 & sampleBottomDepth <18) |>
+    ggplot(aes(elevation, organicCPercent)) +
+      geom_point(aes(color = plotID)) +
+      ggtitle("15-18 cm cores only")
+ggsave(here("figures", "elev_vs_orgC_15-18cm.jpg"), width = 10, height = 8, dpi = 300)
+
+# patterns for deeper depth cores (25-35 cm)
+merged_soilChemistry |>
+    filter(sampleBottomDepth > 25 & sampleBottomDepth <35) |>
+    ggplot(aes(organicCPercent, organicd13C)) +
+      geom_point(aes(color = plotID)) +
+      ggtitle("25-35 cm cores only")
+ggsave(here("figures", "orgC_vs_d13C_25-35cm.jpg"), width = 10, height = 8, dpi = 300)
+
+merged_soilChemistry |>
+    filter(sampleBottomDepth > 25 & sampleBottomDepth <35) |>
+    ggplot(aes(elevation, organicCPercent)) +
+      geom_point(aes(color = plotID)) +
+      ggtitle("25-35 cm cores only")
+ggsave(here("figures", "elev_vs_orgC_25-35cm.jpg"), width = 10, height = 8, dpi = 300)
+# this show that we have **2** cores at elevations greater than 1050 m that are within 5 cm of the target depth
+```
+
+### Core Depth for All Collected Cores
+
+```{r}
+#| label: core-depth-all-collected-cores
+
+# expand the analysis here to explore core depth for all ~700 cores that were collected 
+
+# plot core depth (sampleBottomDepth) by plot on all the cores that have been collected
+merged_soilChemistry_allcores |>
+    ggplot(aes(plotID, sampleBottomDepth)) +
+    geom_point() +
+    ggtitle("all collected cores")
+ggsave(here("figures", "pltID_vs_depth.jpg"), width = 10, height = 8, dpi = 300)
+
+# plot core depth (sampleBottomDepth) by collection date on all the cores that have been collected
+merged_soilChemistry_allcores |>
+    ggplot(aes(collectDate, sampleBottomDepth)) +
+      geom_point(aes(color = plotID)) +
+      ggtitle("all collected cores")
+ggsave(here("figures", "date_vs_depth.jpg"), width = 10, height = 8, dpi = 300)
+# I hoped that maybe the coring depth had gotten better with time, but no luck there.
 ```

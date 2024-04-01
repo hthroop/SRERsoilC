@@ -1,0 +1,91 @@
+---
+title: "SRER AOP Overlays"
+author: "Heather Throop"
+format: html
+editor: visual
+---
+
+## Digital Terrain Model
+
+This is some exploratory efforts to look at AOP products, with the intent of overlaying onto SRER soil C data.
+
+This is a work in progress...
+
+```{r}
+# Download tiles for plot SRER_052:
+
+library(neonUtilities)
+library(here)
+library(terra)
+#library(sp)
+
+# changed values so that UTMs are for SRER_052
+for (i in seq(515730, 515780, 1000)) {
+  for (j in seq(3530400, 3530440, 1000)) {
+    byTileAOP(dpID="DP3.30024.001",
+              site="SRER",
+              year="2022-08",
+              buffer=0,
+              easting=i,
+              northing=j,
+              check.size=FALSE)
+  }
+}
+```
+
+```{r}
+# Read in the Digital Terrain Model
+SRER_DTM <- rast(here("DP3.30024.001","neon-aop-products","2022","FullSite","D14","2022_SRER_5","L3","DiscreteLidar","DTMGtif","NEON_D14_SRER_DP3_515000_3530000_DTM.tif"))
+
+plot(SRER_DTM, main="LiDAR Digital Terrain Model \n Santa Rita Experimental Range")
+
+
+# import the digital terrain model
+```
+
+```{r}
+# read-in-CanopyHeightModel
+
+byTileAOP("DP3.30015.001", site="SRER", year="2019", check.size = T,
+          easting=515000, northing=3530000) # SW corner of SRER
+
+SRER_chm <- rast(here("DP3.30015.001","neon-aop-products","2019","FullSite","D14","2019_SRER_3","L3","DiscreteLidar","CanopyHeightModelGtif","NEON_D14_SRER_DP3_515000_3530000_CHM.tif"))
+
+plot(SRER_chm, main="Canopy Height Model \n Santa Rita Experimental Range")
+```
+
+```{r}
+# VegIndices-Spectrometer-Mosaic
+
+byTileAOP("DP3.30026.001", site="SRER", year="2019", check.size = T,
+          easting=515000, northing=3530000) # SW corner of SRER
+
+SRER_savi <- rast(here("DP3.30026.001","neon-aop-products","2019","FullSite","D14","2019_SRER_3","L3","Spectrometer","VegIndices","NEON_D14_SRER_DP3_515000_3530000_VegIndices","NEON_D14_SRER_DP3_515000_3530000_SAVI.tif"))
+
+plot(SRER_savi, main="Spectral VegIndices \n Santa Rita Experimental Range")
+
+# zoom in on a single plot - here arbitrarily selected as SRER_052, which is one of the tower plots
+merged_soilChemistry |>
+    filter(plotID == "SRER_052") |>
+    ggplot(aes(adjEasting, adjNorthing)) +
+      geom_point(aes(color = acidTreatment)) +
+      ggtitle("Plot_052 Analyzed Cores") 
+
+
+
+ggplot() +
+  geom_spatraster(data = SRER_savi, na.rm = TRUE) +
+
+# scale_fill_gradient2(
+#    low = "white", 
+#    mid = "brown", 
+#    high = "green", 
+#    midpoint = 100, 
+#    na.value = "white") +
+#  scale_fill_gradientn(colors = c("white", "blue"), values = c(0, max(AI_raster_data$awi_pm_sr_yr))) +
+ # coord_sf(
+#    xlim = c(515745, 515575),
+#    ylim = c(3530400, 3530440)) +
+#  geom_point(data = merged_soilChemistry, 
+#             aes(x = adjEasting, y = adjNorthing), color = "red", size = 1) 
+```

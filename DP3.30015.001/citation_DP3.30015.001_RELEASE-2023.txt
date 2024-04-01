@@ -1,0 +1,11 @@
+@misc{https://doi.org/10.48443/y26y-sj42,
+  doi = {10.48443/Y26Y-SJ42},
+  url = {https://data.neonscience.org/data-products/DP3.30015.001/RELEASE-2023},
+  author = {{National Ecological Observatory Network (NEON)}},
+  keywords = {vegetation, canopy, airborne, aerial, remote sensing, structure, 3D, light detection and ranging (LiDAR), canopy height model (CHM)},
+  language = {en},
+  title = {Ecosystem structure (DP3.30015.001)},
+  publisher = {National Ecological Observatory Network (NEON)},
+  year = {2023}
+}
+

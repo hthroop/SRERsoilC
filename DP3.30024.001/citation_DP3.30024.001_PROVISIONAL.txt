@@ -1,0 +1,9 @@
+@misc{DP3.30024.001/provisional,
+  doi = {},
+  url = {https://data.neonscience.org/data-products/DP3.30024.001},
+  author = {{National Ecological Observatory Network (NEON)}},
+  language = {en},
+  title = {Elevation - LiDAR (DP3.30024.001)},
+  publisher = {National Ecological Observatory Network (NEON)},
+  year = {2024}
+}

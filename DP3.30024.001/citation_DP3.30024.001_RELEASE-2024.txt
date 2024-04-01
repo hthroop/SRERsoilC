@@ -1,0 +1,12 @@
+@misc{https://doi.org/10.48443/jfkp-n523,
+  doi = {10.48443/JFKP-N523},
+  url = {https://data.neonscience.org/data-products/DP3.30024.001/RELEASE-2024},
+  author = {{National Ecological Observatory Network (NEON)}},
+  keywords = {airborne, aerial, remote sensing, 3D, elevation, bare earth, digital elevation model (DEM), digital terrain model (DTM), light detection and ranging (LiDAR), digital surface model (DSM)},
+  language = {en},
+  title = {Elevation - LiDAR (DP3.30024.001)},
+  publisher = {National Ecological Observatory Network (NEON)},
+  year = {2024},
+  copyright = {Creative Commons Zero v1.0 Universal}
+}
+

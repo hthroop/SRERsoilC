@@ -1,0 +1,11 @@
+@misc{https://doi.org/10.48443/4esn-pb38,
+  doi = {10.48443/4ESN-PB38},
+  url = {https://data.neonscience.org/data-products/DP3.30026.001/RELEASE-2023},
+  author = {{National Ecological Observatory Network (NEON)}},
+  keywords = {vegetation, leaves, canopy, foliage, airborne, aerial, remote sensing, spectrometer, lignin, vegetation indices, mosaic, xanthophyll, hyperspectral imaging (HSI), nitrogen (N), normalized difference nitrogen index (NDNI), normalized difference lignin index (NDLI), enhanced vegetation index (EVI), normalized difference vegetation index (NDVI), phytochemical reflectance index (PRI), soil-adjusted vegetation index (SAVI), atmospherically resistant vegetation index (ARVI)},
+  language = {en},
+  title = {Vegetation indices - spectrometer - mosaic (DP3.30026.001)},
+  publisher = {National Ecological Observatory Network (NEON)},
+  year = {2023}
+}
+

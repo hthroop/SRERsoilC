@@ -191,8 +191,29 @@ I'm looking at patterns in the soil C data from cores that have been analyzed to
 # plot organic C versus 13C for cores that have been analyzed
 merged_soilChemistry |>
     ggplot(aes(organicCPercent, organicd13C)) +
-    geom_point(aes(color = plotID))
+    geom_point(aes(fill = plotID, shape = plotID), size =3) +
+    scale_shape_manual(values=c(21,22,23,24,25,21,22,23,24,25)) +
+    scale_fill_brewer(palette="Paired") 
 ggsave(here("figures", "orgC_vs_d13C.jpg"), width = 10, height = 8, dpi = 300)
+
+merged_soilChemistry |>
+  ggplot(aes(x = organicCPercent, y = organicd13C)) +
+  geom_point(aes(fill = plotID, shape = plotID), size = 3) +
+  scale_shape_manual(values=c(21, 22, 23, 24, 25, 21, 22, 23, 24, 25)) +
+  scale_fill_brewer(palette="Paired") +
+  geom_hline(yintercept = -19, color = "red") +  # Add red horizontal line
+  geom_vline(xintercept = 1, color = "blue") +  # Add blue vertical line
+  annotate("text", x = 0.1, y = -16.5, label = "grass signal", 
+           color = "purple", hjust = 0, vjust = 1) + 
+  annotate("text", x = 2.5, y = -21, label = "shrub signal", 
+           color = "purple", hjust = 1, vjust = 0) + 
+  theme_minimal() + 
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(color = "black")
+  )
+
 
 # plot SOC versus elevation for cores that have been analyzed
 merged_soilChemistry |>

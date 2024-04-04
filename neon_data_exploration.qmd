@@ -26,6 +26,7 @@ options(stringsAsFactors=F)
 library(geoNEON)
 library(terra)
 library(tidyterra)
+library(sf)
 ```
 
 ### Data Downloading
@@ -190,13 +191,6 @@ I'm looking at patterns in the soil C data from cores that have been analyzed to
 #| label: explore-SOC-patterns
 # plot organic C versus 13C for cores that have been analyzed
 merged_soilChemistry |>
-    ggplot(aes(organicCPercent, organicd13C)) +
-    geom_point(aes(fill = plotID, shape = plotID), size =3) +
-    scale_shape_manual(values=c(21,22,23,24,25,21,22,23,24,25)) +
-    scale_fill_brewer(palette="Paired") 
-ggsave(here("figures", "orgC_vs_d13C.jpg"), width = 10, height = 8, dpi = 300)
-
-merged_soilChemistry |>
   ggplot(aes(x = organicCPercent, y = organicd13C)) +
   geom_point(aes(fill = plotID, shape = plotID), size = 3) +
   scale_shape_manual(values=c(21, 22, 23, 24, 25, 21, 22, 23, 24, 25)) +
@@ -213,7 +207,7 @@ merged_soilChemistry |>
     panel.grid.minor = element_blank(),
     axis.line = element_line(color = "black")
   )
-
+ggsave(here("figures", "orgC_vs_d13C.jpg"), width = 10, height = 8, dpi = 300)
 
 # plot SOC versus elevation for cores that have been analyzed
 merged_soilChemistry |>
@@ -306,4 +300,51 @@ merged_soilChemistry_allcores |>
       ggtitle("all collected cores")
 ggsave(here("figures", "date_vs_depth.jpg"), width = 10, height = 8, dpi = 300)
 # I hoped that maybe the coring depth had gotten better with time, but no luck there.
+```
+
+## Coordinates for DeepForest
+
+```{r}
+#| label: initial-DeepForest-exploration
+
+# pull out coordinates for plots 05 and 06 to look at veg context of cores 
+CoreCoordinates <- merged_soilChemistry |>
+    filter(plotID == "SRER_005" |plotID == "SRER_006" ) |>
+    select(plotID, utmZone, adjNorthing, adjEasting, adjCoordinateUncertainty, 
+           adjDecimalLatitude, adjDecimalLongitude, adjElevation, adjElevationUncertainty) |>
+    distinct(adjNorthing, .keep_all = TRUE)
+write.csv(CoreCoordinates, here("output", "SRER_core_coordinates.csv"), row.names = FALSE)
+
+```
+
+```{r}
+
+
+#### NOT WORKING
+#| label: get-plot-coordinates
+
+# Download site layout data for all sites
+site_info <- loadByProduct(dpID = "DP1.00001.001")
+
+# Assuming 'site_info' contains the plot data, filter for the SRER site and specific plots
+srer_plots <- site_info$dp1.00001.001$site_layout %>%
+  filter(siteID %in% c("SRER"), plotID %in% c("SRER_005", "SRER_006"))
+
+# Convert coordinates from NEON's spatial reference to UTM and decimal degrees
+# This step assumes the coordinates are provided in a suitable format for conversion
+srer_plots_utm <- st_transform(srer_plots, crs = st_crs(32612)) # Example UTM zone 12N
+srer_plots_dd <- st_transform(srer_plots, crs = st_crs(4326)) # WGS84 Decimal Degrees
+
+# Extract the coordinate data to a new dataframe for CSV output
+coordinates_df <- data.frame(
+  plotID = srer_plots$plotID,
+  utm_easting = st_coordinates(srer_plots_utm)[,1],
+  utm_northing = st_coordinates(srer_plots_utm)[,2],
+  decimal_degrees_lon = st_coordinates(srer_plots_dd)[,1],
+  decimal_degrees_lat = st_coordinates(srer_plots_dd)[,2]
+)
+
+# Write the dataframe to a CSV file
+write.csv(coordinates_df, here("output", "srer_plot_coordinates.csv"), row.names = FALSE)
+
 ```
